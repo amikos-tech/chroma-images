@@ -1,0 +1,72 @@
+FROM python:3.12-alpine AS builder
+
+ARG REBUILD_HNSWLIB
+
+# Set environment variables
+ENV PIP_NO_CACHE_DIR=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
+RUN apk update && apk add --no-cache \
+    build-base \
+    linux-headers \
+    gcc \
+    g++ \
+    cmake \
+    autoconf \
+    python3-dev \
+    unzip \
+    curl \
+    make \
+    binutils
+
+WORKDIR /chroma
+
+COPY . /chroma/
+RUN pip3 install --no-cache --upgrade pip setuptools wheel
+
+# Remove unnecessary packages from requirements.txt
+RUN sed -i \
+    -e '/onnxruntime/d' \
+    -e '/tokenizers/d' \
+    requirements.txt
+
+RUN --mount=type=cache,target=/root/.cache/pip pip install --no-cache-dir --upgrade --prefix="/install" -r requirements.txt
+RUN --mount=type=cache,target=/root/.cache/pip if [ "$REBUILD_HNSWLIB" = "true" ]; then pip install --no-cache-dir --no-binary :all: --force-reinstall --prefix="/install" chroma-hnswlib; fi
+RUN find /install -name "*.so" -exec strip --strip-debug {} +
+
+FROM python:3.12-alpine AS final
+
+WORKDIR /chroma
+
+COPY --from=builder /install /usr/local
+COPY --from=builder /chroma/ /chroma/
+COPY ./log_config.yaml /chroma/log_config.yaml
+
+RUN apk add --no-cache bash libstdc++ curl && \
+    addgroup -S chroma && \
+    adduser -S -G chroma chroma && \
+    mv /chroma/docker_entrypoint.sh /docker_entrypoint.sh && \
+    chmod +x /docker_entrypoint.sh && \
+    chown -R chroma:chroma /chroma && \
+    chmod -R 755 /chroma
+
+USER chroma
+
+EXPOSE 8000
+
+HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8000/api/v1/heartbeat || exit 1
+
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    ANONYMIZED_TELEMETRY=false \
+    CHROMA_LOG_CONFIG="/chroma/log_config.yaml" \
+    CHROMA_TIMEOUT_KEEP_ALIVE=30 \
+    CHROMA_HOST_ADDR="0.0.0.0" \
+    ROOT_LOG_LEVEL=WARN \
+    CHROMA_LOG_LEVEL=DEBUG \
+    UVICORN_LOG_LEVEL_UVICORN=INFO
+
+ENTRYPOINT ["/docker_entrypoint.sh"]
+CMD [ "--workers 1 --host ${CHROMA_HOST_ADDR} --port 8000 --proxy-headers --log-config ${CHROMA_LOG_CONFIG} --timeout-keep-alive ${CHROMA_TIMEOUT_KEEP_ALIVE}"]

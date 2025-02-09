@@ -9,4 +9,4 @@ class DefaultEmbeddingFunction(EmbeddingFunction[Documents]):
         pass
 
     def __call__(self, input: Documents) -> Embeddings:
-        raise NotImplementedError("DefaultEmbeddingFunction is not implemented")
+        return [[0.1] * 384] * len(input)

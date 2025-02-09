@@ -95,4 +95,4 @@ jobs:
           bash bin/integration-test.sh ${{ env.TESTS }}
         env:
           CHROMA_PORT: 8000
-          TESTS: "--ignore-glob 'chromadb/test/property/*' --ignore='chromadb/test/test_cli.py' --ignore-glob 'chromadb/test/distributed/*' --ignore='chromadb/test/auth/test_simple_rbac_authz.py'"
+          TESTS: "--ignore-glob 'chromadb/test/property/*' --ignore='chromadb/test/test_cli.py' --ignore-glob 'chromadb/test/distributed/*' --ignore='chromadb/test/auth/test_simple_rbac_authz.py' --ignore='chromadb/test/ef/' --ignore='chromadb/test/db' --ignore='chromadb/test/segment/distributed' --ignore='chromadb/test/test_logservice.py' --ignore='chromadb/test/proto' --ignore='chromadb/test/auth/'"

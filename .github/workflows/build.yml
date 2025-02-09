@@ -54,6 +54,8 @@ jobs:
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+        with:
+          driver: docker
 
       - name: Extract metadata (tags, labels) for Docker
         id: meta
@@ -67,29 +69,29 @@ jobs:
             type=raw,value=latest,enable=${{ inputs.latest == 'true' && matrix.base == 'bookworm' }}
             type=sha,format=long
 
-      - name: Build Docker image
+      - name: Build Docker image for testing
         uses: docker/build-push-action@v5
         with:
           context: ./chroma
           push: false
           load: true
-          sbom: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          tags: local-test-image:${{ matrix.base }}
 
       - name: Test
         shell: bash
         run: |
           set -e
-          export FIRST_TAG=$(echo "${{ steps.meta.outputs.tags }}" | head -n 1)
+          export FIRST_TAG="local-test-image:${{ matrix.base }}"
           export CHROMA_PORT=${{ env.CHROMA_PORT }}
           cd chroma && pip install -r requirements.txt && pip install -r requirements_dev.txt && cd ..
           bash bin/integration-test.sh ${{ env.TESTS }}
         env:
           CHROMA_PORT: 8000
           TESTS: "--ignore-glob 'chromadb/test/property/*' --ignore='chromadb/test/test_cli.py' --ignore-glob 'chromadb/test/distributed/*' --ignore='chromadb/test/auth/test_simple_rbac_authz.py' --ignore='chromadb/test/ef/' --ignore='chromadb/test/db' --ignore='chromadb/test/segment/distributed' --ignore='chromadb/test/test_logservice.py' --ignore='chromadb/test/proto' --ignore='chromadb/test/auth/'"
+
+      - name: Set up Docker Buildx for push
+        if: success()
+        uses: docker/setup-buildx-action@v3
 
       - name: Log in to the Container registry
         if: success()
@@ -99,12 +101,13 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Push Docker image
+      - name: Build and Push Final Image
         if: success()
         uses: docker/build-push-action@v5
         with:
           context: ./chroma
           push: true
+          platforms: linux/amd64,linux/arm64,linux/arm/v7
           sbom: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}

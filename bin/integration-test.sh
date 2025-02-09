@@ -3,7 +3,7 @@
 set -e
 
 function cleanup {
-  docker stop chroma-server
+  docker stop chroma-server || true
 }
 
 trap cleanup EXIT
@@ -19,4 +19,4 @@ echo testing: python -m pytest "$@"
 cd chroma
 python -m pytest "$@"
 
-docker stop chroma-server
+docker stop chroma-server || true

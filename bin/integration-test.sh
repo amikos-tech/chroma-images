@@ -8,7 +8,7 @@ function cleanup {
 
 trap cleanup EXIT
 
-docker run -d --rm --name -e ALLOW_RESET=true chroma-server -p ${CHROMA_PORT}:8000 ${FIRST_TAG}
+docker run -d --rm --name chroma-server -e ALLOW_RESET=true -p ${CHROMA_PORT}:8000 ${FIRST_TAG}
 
 export CHROMA_INTEGRATION_TEST_ONLY=1
 export CHROMA_API_IMPL=chromadb.api.fastapi.FastAPI

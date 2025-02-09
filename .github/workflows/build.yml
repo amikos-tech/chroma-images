@@ -86,10 +86,12 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Test
+        shell: bash
         run: |
           set -e
-          FIRST_TAG=$(echo "${{ steps.meta.outputs.tags }}" | head -n 1)
-          docker run -d --rm --name chroma-server -p 8000:8000 ${FIRST_TAG}
-          sleep 10
-          curl -X GET http://localhost:8000/api/v2/heartbeat
-          docker stop chroma-server
+          export FIRST_TAG=$(echo "${{ steps.meta.outputs.tags }}" | head -n 1)
+          export CHROMA_PORT=${{ env.CHROMA_PORT }}
+          bash bin/integration-test.sh ${{ env.TESTS }}
+        env:
+          CHROMA_PORT: 8000
+          TESTS: "--ignore-glob 'chromadb/test/property/*' --ignore='chromadb/test/test_cli.py' --ignore-glob 'chromadb/test/distributed/*' --ignore='chromadb/test/auth/test_simple_rbac_authz.py'"

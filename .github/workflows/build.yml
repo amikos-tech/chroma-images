@@ -49,7 +49,7 @@ jobs:
           rm -rf chroma/chromadb/utils/embedding_functions
           cp common/embedding_functions.py chroma/chromadb/utils/embedding_functions.py
           cp common/.dockerignore chroma/.dockerignore
-          cp Dockerfile.${{ matrix.base }} chroma/Dockerfile
+          cp ${{ matrix.base }}/Dockerfile.${{ matrix.base }} chroma/Dockerfile
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3

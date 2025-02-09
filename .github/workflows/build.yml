@@ -91,6 +91,7 @@ jobs:
           set -e
           export FIRST_TAG=$(echo "${{ steps.meta.outputs.tags }}" | head -n 1)
           export CHROMA_PORT=${{ env.CHROMA_PORT }}
+          cd chroma && pip install -r requirements.txt && pip install -r requirements_dev.txt
           bash bin/integration-test.sh ${{ env.TESTS }}
         env:
           CHROMA_PORT: 8000

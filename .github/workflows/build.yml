@@ -88,7 +88,8 @@ jobs:
       - name: Test
         run: |
           set -e
-          docker run -d --rm --name chroma-server -p 8000:8000 ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.tags }}
+          FIRST_TAG=$(echo "${{ steps.meta.outputs.tags }}" | head -n 1)
+          docker run -d --rm --name chroma-server -p 8000:8000 ${FIRST_TAG}
           sleep 10
           curl -X GET http://localhost:8000/api/v2/heartbeat
           docker stop chroma-server

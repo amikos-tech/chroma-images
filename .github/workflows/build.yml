@@ -70,6 +70,9 @@ jobs:
             type=ref,event=branch
             type=ref,event=pr
             type=semver,pattern={{chroma_version}}
+            type=raw,value=${{ inputs.chroma_version }}-${{ matrix.base }}
+            type=raw,value=latest-${{ matrix.base }},enable=${{ inputs.latest == 'true' }}
+            type=raw,value=latest,enable=${{ inputs.latest == 'true' && matrix.base == 'bookworm' }}
             type=sha,format=long
 
       - name: Build and push Docker image
@@ -77,6 +80,7 @@ jobs:
         with:
           context: .
           push: true
+          sbom: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha

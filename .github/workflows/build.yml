@@ -27,13 +27,12 @@ permissions:
 jobs:
 
   build:
-    name: ${{ matrix.base }}/$({{ matrix.architecture }}) Chroma Server Image
+    name: ${{ matrix.base }} Chroma Server Image
     strategy:
       fail-fast: false
       matrix:
         base: ["bookworm", "alpine"]
-        architecture: ["linux/amd64", "linux/arm64", "linux/arm/v7"]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04-arm
     
     steps:
       - name: Checkout repository
@@ -119,6 +118,7 @@ jobs:
           ignore-unfixed: true
           vuln-type: 'os,library'
           severity: 'CRITICAL,HIGH'
+
       - name: Set up Docker Buildx for push
         if: success()
         uses: docker/setup-buildx-action@v3
@@ -145,7 +145,7 @@ jobs:
         with:
           context: ./chroma
           push: true
-          platforms: ${{ matrix.architecture }}
+          platforms: linux/amd64,linux/arm64
           sbom: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
@@ -156,7 +156,7 @@ jobs:
         id: image-ref
         run: |
           set -e
-          # Get the first tag for each registry for vulnerability scanning
+          # Get the first tag for each registry
           GHCR_TAG="$(echo '${{ steps.meta.outputs.tags }}' | grep '^ghcr.io' | head -n 1)"
           DOCKERHUB_TAG="$(echo '${{ steps.meta.outputs.tags }}' | grep '^docker.io' | head -n 1)"
           echo "ghcr-ref=${GHCR_TAG}@${{ steps.build-and-push.outputs.digest }}" >> $GITHUB_OUTPUT

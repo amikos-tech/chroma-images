@@ -176,8 +176,8 @@ jobs:
         run: |
           set -e
           export AWS_REGION=${{ env.AWS_REGION }}
-          cosign sign --key ${COSIGN_PUBLIC_KEY} --tlog-upload=false ${{ steps.image-ref.outputs.image-ref }}
-          cosign attest --key ${COSIGN_PUBLIC_KEY} --type cyclonedx --predicate chroma.cdx.json --tlog-upload=false ${{ steps.image-ref.outputs.image-ref }}
-          cosign attest --key ${COSIGN_PUBLIC_KEY} --type vuln --predicate chroma.vuln.json --tlog-upload=false ${{ steps.image-ref.outputs.image-ref }}
+          cosign sign --key ${COSIGN_PUBLIC_KEY} ${{ steps.image-ref.outputs.image-ref }}
+          cosign attest --key ${COSIGN_PUBLIC_KEY} --type cyclonedx --predicate chroma.cdx.json ${{ steps.image-ref.outputs.image-ref }}
+          cosign attest --key ${COSIGN_PUBLIC_KEY} --type vuln --predicate chroma.vuln.json ${{ steps.image-ref.outputs.image-ref }}
         env:
           COSIGN_PUBLIC_KEY: ${{ secrets.AWS_KMS_OSS_IMAGE_SIGNING_KEY }}

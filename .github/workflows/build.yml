@@ -15,7 +15,7 @@ on:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}/chroma
-  AWS_REGION : "eu-central-1"
+  AWS_REGION : "eu-west-1"
 
 permissions:
     id-token: write   # This is required for requesting the JWT
@@ -172,3 +172,13 @@ jobs:
         env:
           TRIVY_USERNAME: ${{ github.actor }}
           TRIVY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Sign image with a key
+        run: |
+          set -e
+          cosign sign --key ${COSIGN_PUBLIC_KEY} --tlog-upload=false ${{ steps.image-ref.outputs.image-ref }}
+          cosign attest --key ${COSIGN_PUBLIC_KEY} --type cyclonedx --predicate chroma.cdx.json --tlog-upload=false ${{ steps.image-ref.outputs.image-ref }}
+          cosign attest --key ${COSIGN_PUBLIC_KEY} --type vuln --predicate chroma.vuln.json --tlog-upload=false ${{ steps.image-ref.outputs.image-ref }}
+        env:
+          COSIGN_PUBLIC_KEY: ${{ secrets.AWS_KMS_OSS_IMAGE_SIGNING_KEY }}
+          

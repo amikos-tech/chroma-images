@@ -27,7 +27,7 @@ permissions:
 jobs:
 
   build:
-    name: ${{ matrix.base }} Chroma Server Image
+    name: ${{ matrix.base }}/$({{ matrix.architecture }}) Chroma Server Image
     strategy:
       fail-fast: false
       matrix:

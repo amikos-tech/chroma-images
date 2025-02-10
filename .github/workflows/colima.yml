@@ -1,4 +1,4 @@
-name: Colima
+name: Ubuntu arm64 Chroma Server Image
 
 on:
   workflow_dispatch:
@@ -33,11 +33,12 @@ jobs:
       fail-fast: false
       matrix:
         base: ["bookworm", "alpine"]
-    runs-on: macos-14
+    runs-on: ubuntu-24.04
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
       - name: Checkout Chroma repository
         uses: actions/checkout@v4
         with:
@@ -47,11 +48,44 @@ jobs:
           submodules: recursive
           ref: ${{ inputs.chroma_version }}
 
-      - name: Docker setup
+      - name: configure aws credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::531530523245:role/github-oidc
+          role-session-name: chroma-images-oidc
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@v3.8.0
+
+      - name: Configure
         run: |
-            brew install docker
-            brew install colima
-            colima start
+          set -e
+          cp common/log_config.yaml chroma/log_config.yaml
+          cp common/docker_entrypoint.sh chroma/docker_entrypoint.sh
+          rm -rf chroma/chromadb/utils/embedding_functions
+          cp common/embedding_functions.py chroma/chromadb/utils/embedding_functions.py
+          cp common/.dockerignore chroma/.dockerignore
+          cp ${{ matrix.base }}/Dockerfile.${{ matrix.base }} chroma/Dockerfile
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          driver: docker
+
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: |
+            ${{ env.GHCR_REGISTRY }}/${{ env.GHCR_IMAGE_NAME }}
+            ${{ env.DOCKERHUB_REGISTRY }}/${{ env.DOCKERHUB_IMAGE_NAME }}
+          tags: |
+            type=semver,pattern=${{ inputs.chroma_version }}-${{ matrix.base }}
+            type=raw,value=${{ inputs.chroma_version }}-${{ matrix.base }}
+            type=raw,value=latest-${{ matrix.base }},enable=${{ inputs.latest == 'true' }}
+            type=raw,value=latest,enable=${{ inputs.latest == 'true' && matrix.base == 'bookworm' }}
+            type=sha,format=long
 
       - name: Build Docker image for testing
         uses: docker/build-push-action@v5
@@ -59,7 +93,7 @@ jobs:
           context: ./chroma
           push: false
           load: true
-          platforms: linux/amd64,linux/arm64
+          platforms: inux/arm64
           tags: local-test-image:${{ matrix.base }}
 
 

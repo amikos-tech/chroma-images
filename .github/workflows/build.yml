@@ -15,6 +15,7 @@ on:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}/chroma
+  AWS_REGION : "eu-central-1"
 
 jobs:
 
@@ -41,6 +42,16 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           submodules: recursive
           ref: ${{ inputs.chroma_version }}
+
+      - name: configure aws credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::531530523245:role/github-oidc
+          role-session-name: chroma-images-oidc
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@v3.8.0
 
       - name: Configure
         run: |
@@ -122,3 +133,29 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Get image ref
+        id: image-ref
+        run: |
+          set -e
+          FIRST_TAG="$(echo ${{ steps.meta.outputs.tags }} | head -n 1)"
+          export IMAGE_REF=${FIRST_TAG}
+
+      - name: Run Trivy SBOM
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ steps.image-ref.outputs.image-ref }}
+          format: 'cyclonedx'
+          output: 'chroma.cdx.json'
+        env:
+          TRIVY_USERNAME: ${{ github.actor }}
+          TRIVY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+      - name: Run Trivy SBOM
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ steps.image-ref.outputs.image-ref }}
+          format: 'cosign-vuln'
+          output: 'chroma.vuln.json'
+        env:
+          TRIVY_USERNAME: ${{ github.actor }}
+          TRIVY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}

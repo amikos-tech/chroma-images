@@ -1,0 +1,65 @@
+name: Chroma Server Image
+
+on:
+  workflow_dispatch:
+    inputs:
+      chroma_version:
+        description: 'Chroma version to use for the image'
+        required: true
+        default: '0.6.3'
+      latest:
+        description: 'Whether to use the latest tag'
+        required: false
+        default: 'false'
+
+
+env:
+  GHCR_REGISTRY: ghcr.io
+  DOCKERHUB_REGISTRY: docker.io
+  GHCR_IMAGE_NAME: ${{ github.repository }}/chroma
+  DOCKERHUB_IMAGE_NAME: amikos/chroma
+  AWS_REGION : "eu-west-1"
+
+permissions:
+    id-token: write   # This is required for requesting the JWT
+    contents: read
+    packages: write
+
+jobs:
+
+  build:
+    name: ${{ matrix.base }} Chroma Server Image
+    strategy:
+      fail-fast: false
+      matrix:
+        base: ["bookworm", "alpine"]
+    runs-on: macos-14.0
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Checkout Chroma repository
+        uses: actions/checkout@v4
+        with:
+          repository: chroma-core/chroma
+          path: chroma
+          token: ${{ secrets.GITHUB_TOKEN }}
+          submodules: recursive
+          ref: ${{ inputs.chroma_version }}
+
+      - name: Docker setup
+        run: |
+            brew install docker
+            brew install colima
+            colima start --arch arm64 --runtime Docker --vm-type=macos
+
+      - name: Build Docker image for testing
+        uses: docker/build-push-action@v5
+        with:
+          context: ./chroma
+          push: false
+          load: true
+          platforms: linux/amd64,linux/arm64
+          tags: local-test-image:${{ matrix.base }}
+
+

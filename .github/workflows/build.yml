@@ -176,7 +176,7 @@ jobs:
         run: |
           set -e
           export AWS_REGION=${{ env.AWS_REGION }}
-          cosign sign --key ${COSIGN_PUBLIC_KEY} ${{ steps.image-ref.outputs.image-ref }}
+          cosign sign -y --key ${COSIGN_PUBLIC_KEY} ${{ steps.image-ref.outputs.image-ref }}
           cosign attest -y --key ${COSIGN_PUBLIC_KEY} --type cyclonedx --predicate chroma.cdx.json ${{ steps.image-ref.outputs.image-ref }}
           cosign attest -y --key ${COSIGN_PUBLIC_KEY} --type vuln --predicate chroma.vuln.json ${{ steps.image-ref.outputs.image-ref }}
         env:

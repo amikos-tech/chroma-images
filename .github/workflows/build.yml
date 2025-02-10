@@ -17,6 +17,11 @@ env:
   IMAGE_NAME: ${{ github.repository }}/chroma
   AWS_REGION : "eu-central-1"
 
+permissions:
+    id-token: write   # This is required for requesting the JWT
+    contents: read
+    packages: write
+
 jobs:
 
   build:
@@ -26,10 +31,7 @@ jobs:
       matrix:
         base: ["bookworm", "alpine"]
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-
+    
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4

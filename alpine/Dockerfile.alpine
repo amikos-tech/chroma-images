@@ -46,8 +46,8 @@ COPY --from=builder /chroma/ /chroma/
 COPY ./log_config.yaml /chroma/log_config.yaml
 
 RUN apk add --no-cache bash libstdc++ curl sqlite && \
-    addgroup -S chroma && \
-    adduser -S -G chroma chroma && \
+    addgroup -g 1000 chroma && \
+    adduser -u 1000 -G chroma -S chroma && \
     mv /chroma/docker_entrypoint.sh /docker_entrypoint.sh && \
     chmod +x /docker_entrypoint.sh && \
     chown -R chroma:chroma /chroma && \

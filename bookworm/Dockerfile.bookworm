@@ -47,8 +47,8 @@ COPY --from=builder /chroma/ /chroma/
 COPY ./log_config.yaml /chroma/log_config.yaml
 
 RUN apt update && apt install -y curl sqlite3 && \
-    groupadd -r chroma && \
-    useradd -r -g chroma chroma && \ 
+    groupadd -g 1000 chroma && \
+    useradd -u 1000 -g chroma -m -s /bin/bash chroma && \ 
     mv /chroma/docker_entrypoint.sh /docker_entrypoint.sh && \
     chmod +x /docker_entrypoint.sh && \
     chown -R chroma:chroma /chroma && \

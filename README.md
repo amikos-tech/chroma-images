@@ -46,3 +46,12 @@ curl -o cosign.pub $PUBLIC_KEY_URL
 cosign verify --key cosign.pub $IMAGE
 ```
 
+
+### Running in rootless mode
+
+```bash
+docker run --rm -it --user 1000:1000 --group-add 1000 --name chroma-rootless ghcr.io/amikos-tech/chroma-images/chroma:0.6.3-bookworm
+# verify
+docker exec chroma-rootless id
+# uid=1000(chroma) gid=1000(chroma) groups=1000(chroma)
+```

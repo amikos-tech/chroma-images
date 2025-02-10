@@ -17,7 +17,9 @@ RUN apt-get update --fix-missing && apt-get install -y --fix-missing \
     unzip \
     curl \
     make \
-    binutils && \
+    binutils \
+    rustc \
+    cargo && \
     rm -rf /var/lib/apt/lists/* && \
     mkdir /install
 
@@ -25,6 +27,12 @@ WORKDIR /chroma
 
 COPY . /chroma/
 RUN pip3 install --no-cache --upgrade pip setuptools wheel
+
+# Remove unnecessary packages from requirements.txt
+RUN sed -i \
+    -e '/onnxruntime/d' \
+    -e '/tokenizers/d' \
+    requirements.txt
 
 RUN --mount=type=cache,target=/root/.cache/pip pip install --no-cache-dir --upgrade --prefix="/install" -r requirements.txt
 RUN --mount=type=cache,target=/root/.cache/pip if [ "$REBUILD_HNSWLIB" = "true" ]; then pip install --no-cache-dir --no-binary :all: --force-reinstall --prefix="/install" chroma-hnswlib; fi

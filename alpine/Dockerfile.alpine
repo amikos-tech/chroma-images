@@ -18,7 +18,9 @@ RUN apk update && apk add --no-cache \
     unzip \
     curl \
     make \
-    binutils
+    binutils \
+    rust \
+    cargo
 
 WORKDIR /chroma
 

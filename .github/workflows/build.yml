@@ -89,6 +89,15 @@ jobs:
           CHROMA_PORT: 8000
           TESTS: "--ignore-glob 'chromadb/test/property/*' --ignore='chromadb/test/test_cli.py' --ignore-glob 'chromadb/test/distributed/*' --ignore='chromadb/test/auth/test_simple_rbac_authz.py' --ignore='chromadb/test/ef/' --ignore='chromadb/test/db' --ignore='chromadb/test/segment/distributed' --ignore='chromadb/test/test_logservice.py' --ignore='chromadb/test/proto' --ignore='chromadb/test/auth/'"
 
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@0.29.0
+        with:
+          image-ref: local-test-image:${{ matrix.base }}
+          format: 'table'
+          exit-code: '1'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH'
       - name: Set up Docker Buildx for push
         if: success()
         uses: docker/setup-buildx-action@v3

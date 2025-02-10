@@ -93,7 +93,7 @@ jobs:
           context: ./chroma
           push: false
           load: true
-          platforms: inux/arm64
+          platforms: linux/arm64
           tags: local-test-image:${{ matrix.base }}
 
 

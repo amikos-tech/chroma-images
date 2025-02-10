@@ -96,7 +96,14 @@ jobs:
           context: ./chroma
           push: false
           load: true
-          platforms: linux/arm64, linux/amd64
-          tags: local-test-image:${{ matrix.base }}
+          platforms: linux/arm64
+          tags: local-test-image-arm64:${{ matrix.base }}
 
-
+      - name: Build Docker image for testing
+        uses: docker/build-push-action@v5
+        with:
+          context: ./chroma
+          push: false
+          load: true
+          platforms: linux/amd64
+          tags: local-test-image-amd64:${{ matrix.base }}

@@ -13,8 +13,10 @@ on:
         default: 'false'
 
 env:
-  REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}/chroma
+  GHCR_REGISTRY: ghcr.io
+  DOCKERHUB_REGISTRY: docker.io
+  GHCR_IMAGE_NAME: ${{ github.repository }}/chroma
+  DOCKERHUB_IMAGE_NAME: amikos/chroma
   AWS_REGION : "eu-west-1"
 
 permissions:
@@ -74,7 +76,9 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          images: |
+            ${{ env.GHCR_REGISTRY }}/${{ env.GHCR_IMAGE_NAME }}
+            ${{ env.DOCKERHUB_REGISTRY }}/${{ env.DOCKERHUB_IMAGE_NAME }}
           tags: |
             type=semver,pattern=${{ inputs.chroma_version }}-${{ matrix.base }}
             type=raw,value=${{ inputs.chroma_version }}-${{ matrix.base }}
@@ -118,13 +122,20 @@ jobs:
         if: success()
         uses: docker/setup-buildx-action@v3
 
-      - name: Log in to the Container registry
+      - name: Log in to GitHub Container Registry
         if: success()
         uses: docker/login-action@v3
         with:
-          registry: ${{ env.REGISTRY }}
+          registry: ${{ env.GHCR_REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Log in to Docker Hub
+        if: success()
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Build and Push Final Image
         if: success()
@@ -140,20 +151,22 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Get image ref
+      - name: Get image refs
         id: image-ref
         run: |
           set -e
-          FIRST_TAG="$(echo ${{ steps.meta.outputs.tags }} | head -n 1)"
-          IMAGE_WITH_DIGEST="${FIRST_TAG}@${{ steps.build-and-push.outputs.digest }}"
-          echo "image-ref=${IMAGE_WITH_DIGEST}" >> $GITHUB_OUTPUT
+          # Get the first tag for each registry for vulnerability scanning
+          GHCR_TAG="$(echo '${{ steps.meta.outputs.tags }}' | grep '^ghcr.io' | head -n 1)"
+          DOCKERHUB_TAG="$(echo '${{ steps.meta.outputs.tags }}' | grep '^docker.io' | head -n 1)"
+          echo "ghcr-ref=${GHCR_TAG}@${{ steps.build-and-push.outputs.digest }}" >> $GITHUB_OUTPUT
+          echo "dockerhub-ref=${DOCKERHUB_TAG}@${{ steps.build-and-push.outputs.digest }}" >> $GITHUB_OUTPUT
 
-      - name: Run Trivy SBOM
+      - name: Run Trivy SBOM for GHCR
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: ${{ steps.image-ref.outputs.image-ref }}
+          image-ref: ${{ steps.image-ref.outputs.ghcr-ref }}
           format: 'cyclonedx'
-          output: 'chroma.cdx.json'
+          output: 'chroma.ghcr.cdx.json'
           exit-code: '1'
           ignore-unfixed: true
           vuln-type: 'os,library'
@@ -161,12 +174,27 @@ jobs:
         env:
           TRIVY_USERNAME: ${{ github.actor }}
           TRIVY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
-      - name: Run Trivy Vulnerability Scan
+
+      - name: Run Trivy SBOM for Docker Hub
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: ${{ steps.image-ref.outputs.image-ref }}
+          image-ref: ${{ steps.image-ref.outputs.dockerhub-ref }}
+          format: 'cyclonedx'
+          output: 'chroma.dockerhub.cdx.json'
+          exit-code: '1'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH'
+        env:
+          TRIVY_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          TRIVY_PASSWORD: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Run Trivy Vulnerability Scan for GHCR
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ steps.image-ref.outputs.ghcr-ref }}
           format: 'cosign-vuln'
-          output: 'chroma.vuln.json'
+          output: 'chroma.ghcr.vuln.json'
           exit-code: '1'
           ignore-unfixed: true
           vuln-type: 'os,library'
@@ -174,12 +202,36 @@ jobs:
         env:
           TRIVY_USERNAME: ${{ github.actor }}
           TRIVY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
-      - name: Sign image with a key
+
+      - name: Run Trivy Vulnerability Scan for Docker Hub
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ steps.image-ref.outputs.dockerhub-ref }}
+          format: 'cosign-vuln'
+          output: 'chroma.dockerhub.vuln.json'
+          exit-code: '1'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH'
+        env:
+          TRIVY_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          TRIVY_PASSWORD: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Sign images with a key
         run: |
           set -e
           export AWS_REGION=${{ env.AWS_REGION }}
-          cosign sign -y --key ${COSIGN_PUBLIC_KEY} ${{ steps.image-ref.outputs.image-ref }}
-          cosign attest -y --key ${COSIGN_PUBLIC_KEY} --type cyclonedx --predicate chroma.cdx.json ${{ steps.image-ref.outputs.image-ref }}
-          cosign attest -y --key ${COSIGN_PUBLIC_KEY} --type vuln --predicate chroma.vuln.json ${{ steps.image-ref.outputs.image-ref }}
+          # Sign GHCR images with GHCR artifacts
+          for tag in $(echo '${{ steps.meta.outputs.tags }}' | grep '^ghcr.io'); do
+            cosign sign -y --key ${COSIGN_PUBLIC_KEY} "${tag}@${{ steps.build-and-push.outputs.digest }}"
+            cosign attest -y --key ${COSIGN_PUBLIC_KEY} --type cyclonedx --predicate chroma.ghcr.cdx.json "${tag}@${{ steps.build-and-push.outputs.digest }}"
+            cosign attest -y --key ${COSIGN_PUBLIC_KEY} --type vuln --predicate chroma.ghcr.vuln.json "${tag}@${{ steps.build-and-push.outputs.digest }}"
+          done
+          # Sign Docker Hub images with Docker Hub artifacts
+          for tag in $(echo '${{ steps.meta.outputs.tags }}' | grep '^docker.io'); do
+            cosign sign -y --key ${COSIGN_PUBLIC_KEY} "${tag}@${{ steps.build-and-push.outputs.digest }}"
+            cosign attest -y --key ${COSIGN_PUBLIC_KEY} --type cyclonedx --predicate chroma.dockerhub.cdx.json "${tag}@${{ steps.build-and-push.outputs.digest }}"
+            cosign attest -y --key ${COSIGN_PUBLIC_KEY} --type vuln --predicate chroma.dockerhub.vuln.json "${tag}@${{ steps.build-and-push.outputs.digest }}"
+          done
         env:
           COSIGN_PUBLIC_KEY: ${{ secrets.AWS_KMS_OSS_IMAGE_SIGNING_KEY }}

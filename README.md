@@ -27,9 +27,8 @@ The goal of the repo is to create a variety of Chroma container images for testi
 
 ```
 -----BEGIN PUBLIC KEY-----
-MHYwEAYHKoZIzj0CAQYFK4EEACIDYgAEWk64eG7xs6V7s1M22cYqK8sLXuqhFTSU
-Vym4iOs1fvF3uEXc1zkGUSWn7WbkLBNrl5j+3Fall/Uebm9hk7+M7NORHfn1FYD/
-4o/2Hn6HG5XJY9IPY6AloXFgGKGT8Lku
+MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE3fHm6JYq4yXOfm2NXd3Z/Peq2hoA
+rRGiviWh/77Do0uW/c03VJwFfTNGchuNQyPx7vETgZ4ier59GLT05DYPSA==
 -----END PUBLIC KEY-----
 ```
 

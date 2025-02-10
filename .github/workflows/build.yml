@@ -128,6 +128,7 @@ jobs:
 
       - name: Build and Push Final Image
         if: success()
+        id: build-and-push
         uses: docker/build-push-action@v5
         with:
           context: ./chroma
@@ -144,7 +145,8 @@ jobs:
         run: |
           set -e
           FIRST_TAG="$(echo ${{ steps.meta.outputs.tags }} | head -n 1)"
-          echo "image-ref=${FIRST_TAG}" >> $GITHUB_OUTPUT
+          IMAGE_WITH_DIGEST="${FIRST_TAG}@${{ steps.build-and-push.outputs.digest }}"
+          echo "image-ref=${IMAGE_WITH_DIGEST}" >> $GITHUB_OUTPUT
 
       - name: Run Trivy SBOM
         uses: aquasecurity/trivy-action@master

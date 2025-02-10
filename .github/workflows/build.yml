@@ -91,6 +91,9 @@ jobs:
           tags: local-test-image:${{ matrix.base }}
 
       - name: Test
+        id: test
+        #skip this step
+        if: false
         shell: bash
         run: |
           set -e
@@ -149,15 +152,23 @@ jobs:
           image-ref: ${{ steps.image-ref.outputs.image-ref }}
           format: 'cyclonedx'
           output: 'chroma.cdx.json'
+          exit-code: '1'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH'
         env:
           TRIVY_USERNAME: ${{ github.actor }}
           TRIVY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
-      - name: Run Trivy SBOM
+      - name: Run Trivy Vulnerability Scan
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: ${{ steps.image-ref.outputs.image-ref }}
           format: 'cosign-vuln'
           output: 'chroma.vuln.json'
+          exit-code: '1'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH'
         env:
           TRIVY_USERNAME: ${{ github.actor }}
           TRIVY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}

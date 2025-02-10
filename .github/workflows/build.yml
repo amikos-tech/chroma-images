@@ -141,7 +141,7 @@ jobs:
         run: |
           set -e
           FIRST_TAG="$(echo ${{ steps.meta.outputs.tags }} | head -n 1)"
-          export IMAGE_REF=${FIRST_TAG}
+          echo "image-ref=${FIRST_TAG}" >> $GITHUB_OUTPUT
 
       - name: Run Trivy SBOM
         uses: aquasecurity/trivy-action@master

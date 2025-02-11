@@ -59,6 +59,17 @@ jobs:
       - name: Install Cosign
         uses: sigstore/cosign-installer@v3.8.0
 
+      - name: Set Python Base Digest
+        id: set-digest
+        run: |
+          if [ "${{ matrix.base }}" = "alpine" ]; then
+            echo "PYTHON_BASE_DIGEST=${{ env.PYTHON_ALPINE_DIGEST }}" >> $GITHUB_ENV
+          else
+            echo "PYTHON_BASE_DIGEST=${{ env.PYTHON_BOOKWORM_DIGEST }}" >> $GITHUB_ENV
+          fi
+          # Debug output
+          echo "Selected digest for ${{ matrix.base }}: ${{ env.PYTHON_BASE_DIGEST }}"
+
       - name: Configure
         run: |
           set -e
@@ -96,7 +107,7 @@ jobs:
           load: true
           tags: local-test-image:${{ matrix.base }}
           build-args: |
-             PYTHON_BASE_DIGEST=${{ matrix.base == 'alpine' && env.PYTHON_ALPINE_DIGEST || env.PYTHON_BOOKWORM_DIGEST }}
+             PYTHON_BASE_DIGEST=${{ env.PYTHON_BASE_DIGEST }}
 
       - name: Test
         id: test
@@ -156,7 +167,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           build-args: |
-             PYTHON_BASE_DIGEST=${{ matrix.base == 'alpine' && env.PYTHON_ALPINE_DIGEST || env.PYTHON_BOOKWORM_DIGEST }}
+             PYTHON_BASE_DIGEST=${{ env.PYTHON_BASE_DIGEST }}
 
       - name: Get image refs
         id: image-ref

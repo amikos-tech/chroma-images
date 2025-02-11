@@ -1,5 +1,5 @@
-ARG PYTHON_BASE_DIGEST=sha256:ae24158f83adcb3ec1dead14356e6debc9f3125167624408d95338faacc5cce3
-FROM --platform=$TARGETPLATFORM python:${PYTHON_BASE_DIGEST} AS builder
+ARG PYTHON_BASE_DIGEST=python@sha256:ae24158f83adcb3ec1dead14356e6debc9f3125167624408d95338faacc5cce3
+FROM --platform=$TARGETPLATFORM ${PYTHON_BASE_DIGEST} AS builder
 
 # Controls whether to rebuild hnswlib from source
 ARG REBUILD_HNSWLIB
@@ -39,7 +39,7 @@ RUN sed -i \
 RUN --mount=type=cache,target=/root/.cache/pip pip install --no-cache-dir --upgrade --prefix="/install" -r requirements.txt
 RUN --mount=type=cache,target=/root/.cache/pip if [ "$REBUILD_HNSWLIB" = "true" ]; then pip install --no-cache-dir --no-binary :all: --force-reinstall --prefix="/install" chroma-hnswlib; fi
 
-FROM --platform=$TARGETPLATFORM python:${PYTHON_BASE_DIGEST} AS final
+FROM --platform=$TARGETPLATFORM ${PYTHON_BASE_DIGEST} AS final
 
 WORKDIR /chroma
 

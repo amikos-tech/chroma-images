@@ -105,6 +105,7 @@ jobs:
           context: ./chroma
           push: false
           load: true
+          platforms: linux/arm64  # Specific for testing
           tags: local-test-image:${{ matrix.base }}
           build-args: |
             PYTHON_BASE_DIGEST=${{ env.PYTHON_BASE_DIGEST }}

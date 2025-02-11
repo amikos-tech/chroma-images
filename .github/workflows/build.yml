@@ -242,15 +242,21 @@ jobs:
           export AWS_REGION=${{ env.AWS_REGION }}
           # Sign GHCR images with GHCR artifacts
           for tag in $(echo '${{ steps.meta.outputs.tags }}' | grep '^ghcr.io'); do
-            cosign sign -y --key ${COSIGN_PUBLIC_KEY} "${tag}@${{ steps.build-and-push.outputs.digest }}"
-            cosign attest -y --key ${COSIGN_PUBLIC_KEY} --type cyclonedx --predicate chroma.ghcr.cdx.json "${tag}@${{ steps.build-and-push.outputs.digest }}"
-            cosign attest -y --key ${COSIGN_PUBLIC_KEY} --type vuln --predicate chroma.ghcr.vuln.json "${tag}@${{ steps.build-and-push.outputs.digest }}"
+            # cosign sign -y --key ${COSIGN_PUBLIC_KEY} "${tag}@${{ steps.build-and-push.outputs.digest }}"
+            cosign sign -y --key ${COSIGN_PUBLIC_KEY} --rekor-url=https://rekor.sigstore.dev "${tag}@${{ steps.build-and-push.outputs.digest }}"
+            # cosign attest -y --key ${COSIGN_PUBLIC_KEY} --type cyclonedx --predicate chroma.ghcr.cdx.json "${tag}@${{ steps.build-and-push.outputs.digest }}"
+            # cosign attest -y --key ${COSIGN_PUBLIC_KEY} --type vuln --predicate chroma.ghcr.vuln.json "${tag}@${{ steps.build-and-push.outputs.digest }}"
+            cosign attach sbom --sbom chroma.ghcr.cdx.json "${tag}@${{ steps.build-and-push.outputs.digest }}"
+            cosign attach attestation --attestation chroma.ghcr.vuln.json "${tag}@${{ steps.build-and-push.outputs.digest }}"
           done
           # Sign Docker Hub images with Docker Hub artifacts
           for tag in $(echo '${{ steps.meta.outputs.tags }}' | grep '^docker.io'); do
-            cosign sign -y --key ${COSIGN_PUBLIC_KEY} "${tag}@${{ steps.build-and-push.outputs.digest }}"
-            cosign attest -y --key ${COSIGN_PUBLIC_KEY} --type cyclonedx --predicate chroma.dockerhub.cdx.json "${tag}@${{ steps.build-and-push.outputs.digest }}"
-            cosign attest -y --key ${COSIGN_PUBLIC_KEY} --type vuln --predicate chroma.dockerhub.vuln.json "${tag}@${{ steps.build-and-push.outputs.digest }}"
+            # cosign sign -y --key ${COSIGN_PUBLIC_KEY} "${tag}@${{ steps.build-and-push.outputs.digest }}"
+            cosign sign -y --key ${COSIGN_PUBLIC_KEY} --rekor-url=https://rekor.sigstore.dev "${tag}@${{ steps.build-and-push.outputs.digest }}"
+            # cosign attest -y --key ${COSIGN_PUBLIC_KEY} --type cyclonedx --predicate chroma.dockerhub.cdx.json "${tag}@${{ steps.build-and-push.outputs.digest }}"
+            # cosign attest -y --key ${COSIGN_PUBLIC_KEY} --type vuln --predicate chroma.dockerhub.vuln.json "${tag}@${{ steps.build-and-push.outputs.digest }}"
+            cosign attach sbom --sbom chroma.dockerhub.cdx.json "${tag}@${{ steps.build-and-push.outputs.digest }}"
+            cosign attach attestation --attestation chroma.dockerhub.vuln.json "${tag}@${{ steps.build-and-push.outputs.digest }}"
           done
         env:
           COSIGN_PUBLIC_KEY: ${{ secrets.AWS_KMS_OSS_IMAGE_SIGNING_KEY }}

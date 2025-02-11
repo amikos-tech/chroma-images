@@ -18,8 +18,8 @@ env:
   GHCR_IMAGE_NAME: ${{ github.repository }}/chroma
   DOCKERHUB_IMAGE_NAME: amikos/chroma
   AWS_REGION : "eu-west-1"
-  PYTHON_ALPINE_BASE: "python@${{ vars.PYTHON_ALPINE_DIGEST }}"
-  PYTHON_BOOKWORM_BASE: "python@${{ vars.PYTHON_BOOKWORM_DIGEST }}"
+  PYTHON_ALPINE_BASE: "${{ vars.PYTHON_ALPINE_DIGEST }}"
+  PYTHON_BOOKWORM_BASE: "${{ vars.PYTHON_BOOKWORM_DIGEST }}"
 
 permissions:
     id-token: write   # This is required for requesting the JWT

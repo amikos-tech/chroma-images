@@ -97,7 +97,7 @@ jobs:
             type=raw,value=${{ inputs.chroma_version }}-${{ matrix.base }}
             type=raw,value=latest-${{ matrix.base }},enable=${{ inputs.latest == 'true' }}
             type=raw,value=latest,enable=${{ inputs.latest == 'true' && matrix.base == 'bookworm' }}
-            type=sha,format=long
+            type=raw,value=sha-${{ matrix.base }},prefix=${{ github.sha }}
 
       - name: Build Docker image for testing
         uses: docker/build-push-action@v5
@@ -185,7 +185,7 @@ jobs:
         with:
           image-ref: ${{ steps.image-ref.outputs.ghcr-ref }}
           format: 'cyclonedx'
-          output: 'chroma.ghcr.cdx.json'
+          output: 'chroma.ghcr.${{ matrix.base }}.cdx.json'
           exit-code: '1'
           ignore-unfixed: true
           vuln-type: 'os,library'
@@ -199,7 +199,7 @@ jobs:
         with:
           image-ref: ${{ steps.image-ref.outputs.dockerhub-ref }}
           format: 'cyclonedx'
-          output: 'chroma.dockerhub.cdx.json'
+          output: 'chroma.dockerhub.${{ matrix.base }}.cdx.json'
           exit-code: '1'
           ignore-unfixed: true
           vuln-type: 'os,library'
@@ -213,7 +213,7 @@ jobs:
         with:
           image-ref: ${{ steps.image-ref.outputs.ghcr-ref }}
           format: json
-          output: 'chroma.ghcr.vuln.json'
+          output: 'chroma.ghcr.${{ matrix.base }}.vuln.json'
           exit-code: '1'
           ignore-unfixed: true
           vuln-type: 'os,library'
@@ -227,7 +227,7 @@ jobs:
         with:
           image-ref: ${{ steps.image-ref.outputs.dockerhub-ref }}
           format: json
-          output: 'chroma.dockerhub.vuln.json'
+          output: 'chroma.dockerhub.${{ matrix.base }}.vuln.json'
           exit-code: '1'
           ignore-unfixed: true
           vuln-type: 'os,library'
@@ -239,7 +239,7 @@ jobs:
       - name: Upload Security Scan Results and SBOMs
         uses: actions/upload-artifact@v4
         with:
-          name: security-artifacts
+          name: security-artifacts-${{ matrix.base }}
           path: |
             chroma.*.cdx.json
             chroma.*.vuln.json
@@ -253,17 +253,17 @@ jobs:
           for tag in $(echo '${{ steps.meta.outputs.tags }}' | grep '^ghcr.io'); do
             # cosign sign -y --key ${COSIGN_PUBLIC_KEY} "${tag}@${{ steps.build-and-push.outputs.digest }}"
             cosign sign -y --key ${COSIGN_PUBLIC_KEY} --rekor-url=https://rekor.sigstore.dev "${tag}@${{ steps.build-and-push.outputs.digest }}"
-            cosign attest -y --key ${COSIGN_PUBLIC_KEY} --type cyclonedx --predicate chroma.ghcr.cdx.json "${tag}@${{ steps.build-and-push.outputs.digest }}"
-            cosign attest -y --key ${COSIGN_PUBLIC_KEY} --type https://in-toto.io/Statement/v1 --predicate chroma.ghcr.vuln.json "${tag}@${{ steps.build-and-push.outputs.digest }}"
-            # cosign attach sbom --sbom chroma.ghcr.cdx.json "${tag}@${{ steps.build-and-push.outputs.digest }}"
-            # cosign attach attestation --attestation chroma.ghcr.vuln.json "${tag}@${{ steps.build-and-push.outputs.digest }}"
+            cosign attest -y --key ${COSIGN_PUBLIC_KEY} --type cyclonedx --predicate chroma.ghcr.${{ matrix.base }}.cdx.json "${tag}@${{ steps.build-and-push.outputs.digest }}"
+            cosign attest -y --key ${COSIGN_PUBLIC_KEY} --type https://in-toto.io/Statement/v1 --predicate chroma.ghcr.${{ matrix.base }}.vuln.json "${tag}@${{ steps.build-and-push.outputs.digest }}"
+            # cosign attach sbom --sbom chroma.ghcr.${{ matrix.base }}.cdx.json "${tag}@${{ steps.build-and-push.outputs.digest }}"
+            # cosign attach attestation --attestation chroma.ghcr.${{ matrix.base }}.vuln.json "${tag}@${{ steps.build-and-push.outputs.digest }}"
           done
           # Sign Docker Hub images with Docker Hub artifacts
           for tag in $(echo '${{ steps.meta.outputs.tags }}' | grep '^docker.io'); do
             # cosign sign -y --key ${COSIGN_PUBLIC_KEY} "${tag}@${{ steps.build-and-push.outputs.digest }}"
             cosign sign -y --key ${COSIGN_PUBLIC_KEY} --rekor-url=https://rekor.sigstore.dev "${tag}@${{ steps.build-and-push.outputs.digest }}"
-            cosign attest -y --key ${COSIGN_PUBLIC_KEY} --type cyclonedx --predicate chroma.dockerhub.cdx.json "${tag}@${{ steps.build-and-push.outputs.digest }}"
-            cosign attest -y --key ${COSIGN_PUBLIC_KEY} --type https://in-toto.io/Statement/v1 --predicate chroma.dockerhub.vuln.json "${tag}@${{ steps.build-and-push.outputs.digest }}"
+            cosign attest -y --key ${COSIGN_PUBLIC_KEY} --type cyclonedx --predicate chroma.dockerhub.${{ matrix.base }}.cdx.json "${tag}@${{ steps.build-and-push.outputs.digest }}"
+            cosign attest -y --key ${COSIGN_PUBLIC_KEY} --type https://in-toto.io/Statement/v1 --predicate chroma.dockerhub.${{ matrix.base }}.vuln.json "${tag}@${{ steps.build-and-push.outputs.digest }}"
             # cosign attach sbom --sbom chroma.dockerhub.cdx.json "${tag}@${{ steps.build-and-push.outputs.digest }}"
             # cosign attach attestation --attestation chroma.dockerhub.vuln.json "${tag}@${{ steps.build-and-push.outputs.digest }}"
           done

@@ -70,9 +70,9 @@ jobs:
           cp ${{ matrix.base }}/Dockerfile.${{ matrix.base }} chroma/Dockerfile
           # Replace the FROM lines
           if [ "${{ matrix.base }}" = "alpine" ]; then
-            sed -i "s|^FROM python:.*|FROM --platform=\$TARGETPLATFORM ${{ env.PYTHON_ALPINE_BASE }}|g" chroma/Dockerfile
+            sed -i "s|^FROM python:.*|FROM --platform=\$TARGETPLATFORM python:@${{ env.PYTHON_ALPINE_BASE }}|g" chroma/Dockerfile
           else
-            sed -i "s|^FROM python:.*|FROM --platform=\$TARGETPLATFORM ${{ env.PYTHON_BOOKWORM_BASE }}|g" chroma/Dockerfile
+            sed -i "s|^FROM python:.*|FROM --platform=\$TARGETPLATFORM python:@${{ env.PYTHON_BOOKWORM_BASE }}|g" chroma/Dockerfile
           fi
 
       - name: Set up Docker Buildx

@@ -1,4 +1,4 @@
-ARG PYTHON_BASE_DIGEST=sha256:ae24158f83adcb3ec1dead14356e6debc9f3125167624408d95338faacc5cce3
+ARG PYTHON_BASE_DIGEST=sha256:34656cd90456349040784165b9decccbcee4de66f3ead0a1168ba893455afd1e
 FROM --platform=$TARGETPLATFORM python@${PYTHON_BASE_DIGEST} AS builder
 
 # Controls whether to rebuild hnswlib from source

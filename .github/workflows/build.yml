@@ -87,6 +87,15 @@ jobs:
             image=moby/buildkit:latest
           install: true
 
+      - name: Cache Docker layers
+        uses: actions/cache@v3
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-buildx-${{ matrix.base }}-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-buildx-${{ matrix.base }}-
+            ${{ runner.os }}-buildx-
+
       - name: Extract metadata (tags, labels) for Docker
         id: meta
         uses: docker/metadata-action@v5
@@ -111,7 +120,13 @@ jobs:
           tags: local-test-image:${{ matrix.base }}
           build-args: |
             PYTHON_BASE_DIGEST=${{ env.PYTHON_BASE_DIGEST }}
-          outputs: type=docker
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
+
+      - name: Move cache
+        run: |
+          rm -rf /tmp/.buildx-cache
+          mv /tmp/.buildx-cache-new /tmp/.buildx-cache
 
       - name: Test
         id: test
@@ -168,8 +183,8 @@ jobs:
           sbom: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
           build-args: |
              PYTHON_BASE_DIGEST=${{ env.PYTHON_BASE_DIGEST }}
 

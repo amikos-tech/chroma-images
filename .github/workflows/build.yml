@@ -109,6 +109,8 @@ jobs:
           tags: local-test-image:${{ matrix.base }}
           build-args: |
             PYTHON_BASE_DIGEST=${{ env.PYTHON_BASE_DIGEST }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
       - name: Test
         id: test

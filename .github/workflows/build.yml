@@ -245,7 +245,7 @@ jobs:
             chroma.*.vuln.json
           retention-days: 30
           
-      - name: Sign images with a key
+      - name: Sign
         run: |
           set -e
           export AWS_REGION=${{ env.AWS_REGION }}
@@ -269,3 +269,11 @@ jobs:
           done
         env:
           COSIGN_PUBLIC_KEY: ${{ secrets.AWS_KMS_OSS_IMAGE_SIGNING_KEY }}
+
+      - name: Docker Hub Description
+        uses: peter-evans/dockerhub-description@v4
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          repository: amikos/chroma
+          readme-filepath: ./README.md

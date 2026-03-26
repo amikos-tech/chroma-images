@@ -144,7 +144,7 @@ jobs:
           TESTS: "--ignore-glob 'chromadb/test/property/*' --ignore='chromadb/test/test_cli.py' --ignore-glob 'chromadb/test/distributed/*' --ignore='chromadb/test/auth/test_simple_rbac_authz.py' --ignore='chromadb/test/ef/' --ignore='chromadb/test/db' --ignore='chromadb/test/segment/distributed' --ignore='chromadb/test/test_logservice.py' --ignore='chromadb/test/proto' --ignore='chromadb/test/auth/'"
 
       - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@0.29.0
+        uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1 # v0.35.0
         with:
           image-ref: local-test-image:${{ matrix.base }}
           format: 'table'
@@ -199,7 +199,7 @@ jobs:
           echo "dockerhub-ref=${DOCKERHUB_TAG}@${{ steps.build-and-push.outputs.digest }}" >> $GITHUB_OUTPUT
 
       - name: Run Trivy SBOM for GHCR
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1 # v0.35.0
         with:
           image-ref: ${{ steps.image-ref.outputs.ghcr-ref }}
           format: 'cyclonedx'
@@ -213,7 +213,7 @@ jobs:
           TRIVY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Run Trivy SBOM for Docker Hub
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1 # v0.35.0
         with:
           image-ref: ${{ steps.image-ref.outputs.dockerhub-ref }}
           format: 'cyclonedx'
@@ -227,7 +227,7 @@ jobs:
           TRIVY_PASSWORD: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Run Trivy Vulnerability Scan for GHCR
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1 # v0.35.0
         with:
           image-ref: ${{ steps.image-ref.outputs.ghcr-ref }}
           format: json
@@ -241,7 +241,7 @@ jobs:
           TRIVY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Run Trivy Vulnerability Scan for Docker Hub
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1 # v0.35.0
         with:
           image-ref: ${{ steps.image-ref.outputs.dockerhub-ref }}
           format: json
